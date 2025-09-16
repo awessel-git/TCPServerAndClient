@@ -1,6 +1,15 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
+Console.WriteLine(@"
+ _______ _____ _____     _____                          
+|__   __/ ____|  __ \   / ____|                         
+   | | | |    | |__) | | (___   ___ _ ____   _____ _ __ 
+   | | | |    |  ___/   \___ \ / _ \ '__\ \ / / _ \ '__|
+   | | | |____| |       ____) |  __/ |   \ V /  __/ |   
+   |_|  \_____|_|      |_____/ \___|_|    \_/ \___|_|   
+");
+
 const int Port = 5000;
 
 var listener = InitializeServer(Port);

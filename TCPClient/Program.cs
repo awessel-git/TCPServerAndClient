@@ -1,5 +1,14 @@
 ﻿using System.Net.Sockets;
 
+Console.WriteLine(@"
+ _______ _____ _____     _____ _ _            _   
+|__   __/ ____|  __ \   / ____| (_)          | |  
+   | | | |    | |__) | | |    | |_  ___ _ __ | |_ 
+   | | | |    |  ___/  | |    | | |/ _ \ '_ \| __|
+   | | | |____| |      | |____| | |  __/ | | | |_ 
+   |_|  \_____|_|       \_____|_|_|\___|_| |_|\__|
+");
+
 const string ServerAddress = "127.0.0.1"; // Localhost
 const int Port = 5000; // Same as the server
 
