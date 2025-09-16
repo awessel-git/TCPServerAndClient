@@ -69,7 +69,7 @@ static async Task ProcessClientCommandsAsync(StreamReader reader, StreamWriter w
         string[] parts = numbersLine.Split(' ', StringSplitOptions.RemoveEmptyEntries); // Remove empty elements and only keep the numbers
         if (parts.Length != 2 || !int.TryParse(parts[0], out int a) || !int.TryParse(parts[1], out int b))
         { // Make sure its valid values
-            await writer.WriteLineAsync("Error: Yo, please enter two integers, with a space in-between (:");
+            await writer.WriteLineAsync("Error: Please enter two integers, with a space in-between, e.g., '5 12'");
             continue;
         }
         else

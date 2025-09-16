@@ -54,7 +54,10 @@ static async Task ProcessCommandsAsync(StreamReader reader, StreamWriter writer)
             await writer.WriteLineAsync(numbers);
 
             string? result = await reader.ReadLineAsync();
-            Console.WriteLine($"Result: {result}");
+            if (result?.StartsWith("Error") == true)
+                Console.WriteLine(result);
+            else
+                Console.WriteLine($"Result: {result}");
         }
     }
 }
