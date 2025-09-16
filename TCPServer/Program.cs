@@ -9,7 +9,7 @@ while (true)
 {
     TcpClient client = await listener.AcceptTcpClientAsync(); // Client it waits for
     Console.WriteLine("Client connected!");
-    await HandleClientAsync(client);
+    _ = HandleClientAsync(client); // Discard the return value and make it not await so that it can handle more clients (concurrent)
 }
 
 static TcpListener InitializeServer(int port)
