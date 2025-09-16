@@ -71,7 +71,7 @@ static async Task ProcessCommandAsync(StreamWriter writer, string command, int a
             response = (a - b).ToString();
             break;
         case "random":
-            if (a <= b)
+            if (a >= b)
             {
                 response = "Error: For random, the first number has to be less than the second";
                 break;
