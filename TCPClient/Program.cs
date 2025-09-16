@@ -33,16 +33,28 @@ static async Task ProcessCommandsAsync(StreamReader reader, StreamWriter writer)
         if (string.IsNullOrEmpty(command))
             continue;
 
+        if (command.Equals("quit", StringComparison.OrdinalIgnoreCase))
+            break;
+
         await writer.WriteLineAsync(command);
 
-        string? prompt = await reader.ReadLineAsync(); // Waiting for the "Input numbers" text
-        Console.WriteLine(prompt);
+        string? serverResponse = await reader.ReadLineAsync();
+        Console.WriteLine(serverResponse);
 
-        Console.Write("Enter two numbers (a b): ");
-        string? numbers = Console.ReadLine();
-        await writer.WriteLineAsync(numbers);
+        // Check if we received a response and if it's an error
+        bool isErrorResponse = false;
+        if (serverResponse is null || serverResponse.StartsWith("Error"))
+            isErrorResponse = true;
 
-        string? result = await reader.ReadLineAsync();
-        Console.WriteLine($"The result is {result}");
+        // If there was no error, proceed with getting numbers
+        if (!isErrorResponse)
+        {
+            Console.Write("Enter two numbers (a b): ");
+            string? numbers = Console.ReadLine();
+            await writer.WriteLineAsync(numbers);
+
+            string? result = await reader.ReadLineAsync();
+            Console.WriteLine($"Result: {result}");
+        }
     }
 }

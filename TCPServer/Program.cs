@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 
 Console.WriteLine(@"
- _______ _____ _____     _____                          
+ _______ _____ _____     _____                         
 |__   __/ ____|  __ \   / ____|                         
    | | | |    | |__) | | (___   ___ _ ____   _____ _ __ 
    | | | |    |  ___/   \___ \ / _ \ '__\ \ / / _ \ '__|
@@ -11,6 +11,7 @@ Console.WriteLine(@"
 ");
 
 const int Port = 5000;
+const string InvalidCommand = "Error, command unknown (has to be 'Random', 'Add', or 'Subtract')";
 
 var listener = InitializeServer(Port);
 
@@ -41,6 +42,9 @@ static async Task HandleClientAsync(TcpClient client)
     client.Close();
 }
 
+static bool IsValidCommand(string command) =>
+    command == "add" || command == "subtract" || command == "random";
+
 static async Task ProcessClientCommandsAsync(StreamReader reader, StreamWriter writer)
 {
     while (true)
@@ -48,6 +52,13 @@ static async Task ProcessClientCommandsAsync(StreamReader reader, StreamWriter w
         string? command = await reader.ReadLineAsync();
         if (command is null || command.Equals("quit", StringComparison.OrdinalIgnoreCase))
             break;
+
+        command = command.ToLower();
+        if (!IsValidCommand(command))
+        {
+            await writer.WriteLineAsync(InvalidCommand);
+            continue;
+        }
 
         await writer.WriteLineAsync("Input numbers");
 
@@ -71,7 +82,7 @@ static async Task ProcessClientCommandsAsync(StreamReader reader, StreamWriter w
 static async Task ProcessCommandAsync(StreamWriter writer, string command, int a, int b)
 {
     string response;
-    switch (command.ToLower())
+    switch (command)
     {
         case "add":
             response = (a + b).ToString();
@@ -91,7 +102,7 @@ static async Task ProcessCommandAsync(StreamWriter writer, string command, int a
                 break;
             }
         default:
-            response = "Error, command unknown (has to be 'Random', 'Add', or 'Subtract'";
+            response = InvalidCommand;
             break;
     }
     await writer.WriteLineAsync(response);
