@@ -3,15 +3,21 @@ using System.Net.Sockets;
 
 const int Port = 5000;
 
-var listener = new TcpListener(IPAddress.Any, Port); // Socket, listen for any IP address on this machine, on this port
-listener.Start();
-Console.WriteLine($"Server is running on port {Port}... (:");
+var listener = InitializeServer(Port);
 
 while (true)
 {
     TcpClient client = await listener.AcceptTcpClientAsync(); // Client it waits for
     Console.WriteLine("Client connected!");
     await HandleClientAsync(client);
+}
+
+static TcpListener InitializeServer(int port)
+{
+    var listener = new TcpListener(IPAddress.Any, port); // Socket, listen for any IP address on this machine, on this port
+    listener.Start();
+    Console.WriteLine($"Server is running on port {port}... (:");
+    return listener;
 }
 
 static async Task HandleClientAsync(TcpClient client)
