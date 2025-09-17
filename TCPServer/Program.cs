@@ -10,100 +10,144 @@ Console.WriteLine(@"
    |_|  \_____|_|      |_____/ \___|_|    \_/ \___|_|   
 ");
 
-const int Port = 5000;
+const int ServerPort = 5000;
 const string InvalidCommand = "Error, command unknown (has to be 'Random', 'Add', or 'Subtract')";
 
-var listener = InitializeServer(Port);
+var server = StartServer();
+await AcceptClientsForever(server); // Listen for clients
 
-while (true)
+TcpListener StartServer()
 {
-    TcpClient client = await listener.AcceptTcpClientAsync(); // Client it waits for
-    Console.WriteLine("Client connected!");
-    _ = HandleClientAsync(client); // Discard the return value and make it not await so that it can handle more clients (concurrent)
-}
-
-static TcpListener InitializeServer(int port)
-{
-    var listener = new TcpListener(IPAddress.Any, port); // Socket, listen for any IP address on this machine, on this port
+    var listener = new TcpListener(IPAddress.Any, ServerPort); // Listen for any IP address on this machine on this port
     listener.Start();
-    Console.WriteLine($"Server is running on port {port}... (:");
+    Console.WriteLine($"Server is running on port {ServerPort}... (:");
     return listener;
 }
 
-static async Task HandleClientAsync(TcpClient client)
-{
-    using var stream = client.GetStream(); // Data stream
-    using var reader = new StreamReader(stream); // Used for reading data
-    using var writer = new StreamWriter(stream) { AutoFlush = true }; // Used for writing data
-
-    await ProcessClientCommandsAsync(reader, writer);
-
-    Console.WriteLine("Client disconnected.");
-    client.Close();
-}
-
-static bool IsValidCommand(string command) =>
-    command == "add" || command == "subtract" || command == "random";
-
-static async Task ProcessClientCommandsAsync(StreamReader reader, StreamWriter writer)
+async Task AcceptClientsForever(TcpListener listener)
 {
     while (true)
     {
-        string? command = await reader.ReadLineAsync();
-        if (command is null || command.Equals("quit", StringComparison.OrdinalIgnoreCase))
-            break;
+        TcpClient client = await listener.AcceptTcpClientAsync();
+        Console.WriteLine("Yay! A friend connected!");
+        _ = HandleClientAsync(client); // Discard return value and remove await to handle multiple clients (concurrent)
+    }
+}
 
-        command = command.ToLower();
+async Task HandleClientAsync(TcpClient client)
+{
+    using var stream = client.GetStream(); // Get data stream
+    using var reader = new StreamReader(stream); // For reading data
+    using var writer = new StreamWriter(stream) { AutoFlush = true }; // For writing data
+
+    try
+    {
+        await HandleClientCommands(reader, writer);
+    }
+    catch (Exception)
+    {
+        // Something went wrong, but it's okay
+    }
+
+    Console.WriteLine("Bye bye friend!");
+    client.Close();
+}
+
+async Task HandleClientCommands(StreamReader reader, StreamWriter writer)
+{
+    while (true)
+    {
+        // Listen to what the client wants to do
+        string? command = await ReadCommand(reader);
+        if (command == null) break;
+
+        // Validate command
         if (!IsValidCommand(command))
         {
             await writer.WriteLineAsync(InvalidCommand);
             continue;
         }
 
-        await writer.WriteLineAsync("Input numbers");
-
-        string? numbersLine = await reader.ReadLineAsync();
-        if (numbersLine is null)
-            break;
-
-        string[] parts = numbersLine.Split(' ', StringSplitOptions.RemoveEmptyEntries); // Remove empty elements and only keep the numbers
-        if (parts.Length != 2 || !int.TryParse(parts[0], out int a) || !int.TryParse(parts[1], out int b))
-        { // Make sure its valid values
-            await writer.WriteLineAsync("Error: Please enter two integers, with a space in-between, e.g., '5 12'");
+        // Get numbers
+        var numbers = await GetNumbersFromUser(reader, writer);
+        if (!numbers.HasValue)
+        {
             continue;
         }
-        else
-        {
-            await ProcessCommandAsync(writer, command, a, b);
-        }
+
+        // Process command and send result
+        await ProcessCommand(command, numbers.Value.num1, numbers.Value.num2, writer);
     }
 }
 
-static async Task ProcessCommandAsync(StreamWriter writer, string command, int a, int b)
+async Task<string?> ReadCommand(StreamReader reader)
 {
-    string response;
-    switch (command)
+    try
     {
-        case "add":
-            response = (a + b).ToString();
-            break;
-        case "subtract":
-            response = (a - b).ToString();
-            break;
-        case "random":
-            if (a >= b)
-            {
-                response = "Error: For random, the first number has to be less than the second";
-                break;
-            }
-            else
-            {
-                response = Random.Shared.Next(a, b + 1).ToString(); // Thread safe (:
-                break;
-            }
-        default:
-            response = InvalidCommand;
-            break;
+        string? command = await reader.ReadLineAsync();
+        if (string.IsNullOrEmpty(command)) return null;
+        if (command.Equals("quit", StringComparison.OrdinalIgnoreCase)) return null;
+        return command.ToLower();
     }
-    await writer.WriteLineAsync(response);
+    catch (Exception)
+    {
+        return null;
+    }
+}
+
+// Has to be one of the 3 valid commands
+bool IsValidCommand(string command) =>
+    command == "add" || command == "subtract" || command == "random";
+
+async Task<(int num1, int num2)?> GetNumbersFromUser(StreamReader reader, StreamWriter writer)
+{
+    try
+    {
+        await writer.WriteLineAsync("Input numbers");
+        string? input = await reader.ReadLineAsync();
+
+        if (string.IsNullOrEmpty(input))
+            return null;
+
+        string[] numbers = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (numbers.Length != 2 ||
+            !int.TryParse(numbers[0], out int num1) ||
+            !int.TryParse(numbers[1], out int num2))
+        {
+            await writer.WriteLineAsync("Error! Please give me two numbers with a space between them, like '5 12'");
+            return null;
+        }
+
+        return (num1, num2);
+    }
+    catch (Exception)
+    {
+        return null;
+    }
+}
+
+async Task<string> ProcessCommand(string command, int num1, int num2, StreamWriter writer)
+{
+    string result = command switch
+    {
+        "add" => (num1 + num2).ToString(),
+        "subtract" => (num1 - num2).ToString(),
+        "random" => HandleRandomCommand(num1, num2),
+        _ => InvalidCommand
+    };
+
+    await writer.WriteLineAsync(result);
+    return result;
+}
+
+string HandleRandomCommand(int min, int max)
+{
+    if (min == max)
+        return min.ToString();
+
+    if (min > max)
+        return "Error! The first number has to be smaller than or equal to the second number";
+
+    return Random.Shared.Next(min, max + 1).ToString(); // Thread safe
 }

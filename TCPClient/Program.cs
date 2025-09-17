@@ -25,16 +25,22 @@ await ProcessCommandsAsync(reader, writer);
 
 static async Task ProcessCommandsAsync(StreamReader reader, StreamWriter writer)
 {
-    while (true)
+    // Ask the server 3 times and stop
+    for (int i = 0; i < 3; i++)
     {
         Console.Write("Enter command: ");
         string? command = Console.ReadLine();
 
         if (string.IsNullOrEmpty(command))
+        {
+            i--; // Empty input doesn't count
             continue;
+        }
 
         if (command.Equals("quit", StringComparison.OrdinalIgnoreCase))
-            break;
+        {
+            Environment.Exit(0); // Exit immediately when quit is entered
+        }
 
         await writer.WriteLineAsync(command);
 
@@ -42,22 +48,28 @@ static async Task ProcessCommandsAsync(StreamReader reader, StreamWriter writer)
         Console.WriteLine(serverResponse);
 
         // Check if we received a response and if it's an error
-        bool isErrorResponse = false;
         if (serverResponse is null || serverResponse.StartsWith("Error"))
-            isErrorResponse = true;
+        {
+            i--; // Don't count invalid commands or errors
+            continue;
+        }
 
         // If there was no error, proceed with getting numbers
-        if (!isErrorResponse)
-        {
-            Console.Write("Enter two numbers (a b): ");
-            string? numbers = Console.ReadLine();
-            await writer.WriteLineAsync(numbers);
+        Console.Write("Enter two numbers (a b): ");
+        string? numbers = Console.ReadLine();
+        await writer.WriteLineAsync(numbers);
 
-            string? result = await reader.ReadLineAsync();
-            if (result?.StartsWith("Error") == true)
-                Console.WriteLine(result);
-            else
-                Console.WriteLine($"Result: {result}");
+        string? result = await reader.ReadLineAsync();
+        if (result?.StartsWith("Error") == true)
+        {
+            Console.WriteLine(result);
+            i--; // Don't count number input errors
         }
+        else
+            Console.WriteLine($"Result: {result}");
     }
+
+    Console.WriteLine("\nThree successful operations completed. Press any key to exit.");
+    Console.ReadKey();
+    Environment.Exit(0);
 }
