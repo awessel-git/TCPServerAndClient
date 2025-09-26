@@ -10,10 +10,10 @@ Console.WriteLine(@"
    |_|  \_____|_|      |_____/ \___|_|    \_/ \___|_|   
 ");
 
-const int ServerPort = 5000;
+const int ServerPort = 5000; // Port to listen on
 const string InvalidCommand = "Error, command unknown (has to be 'Random', 'Add', or 'Subtract')";
 
-var server = StartServer();
+var server = StartServer(); // Get the TCP listener
 await AcceptClientsForever(server); // Listen for clients
 
 TcpListener StartServer()
@@ -28,7 +28,7 @@ async Task AcceptClientsForever(TcpListener listener)
 {
     while (true)
     {
-        TcpClient client = await listener.AcceptTcpClientAsync();
+        TcpClient client = await listener.AcceptTcpClientAsync(); // Here is where the client connects
         Console.WriteLine("Yay! A friend connected!");
         _ = HandleClientAsync(client); // Discard return value and remove await to handle multiple clients (concurrent)
     }
@@ -46,7 +46,7 @@ async Task HandleClientAsync(TcpClient client)
     }
     catch (Exception)
     {
-        // Something went wrong, but it's okay
+        // Something went wrong, but it's okay (:
     }
 
     Console.WriteLine("Bye bye friend!");
